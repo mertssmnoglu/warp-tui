@@ -4,7 +4,7 @@ use tokio::process::Command as AsyncCommand;
 use tokio::time::timeout;
 
 use crate::warp::error::{WarpError, WarpResult};
-use crate::warp::types::{WarpInfo, WarpStatus, WarpMode, RegistrationInfo};
+use crate::warp::types::{RegistrationInfo, WarpInfo, WarpMode, WarpStatus};
 
 #[derive(Clone, Debug)]
 pub struct WarpClient {
@@ -52,9 +52,7 @@ impl WarpClient {
             return Err(WarpError::CommandNotFound);
         }
 
-        let command_future = AsyncCommand::new("warp-cli")
-            .args(args)
-            .output();
+        let command_future = AsyncCommand::new("warp-cli").args(args).output();
 
         let output = timeout(self.command_timeout, command_future)
             .await
@@ -139,10 +137,10 @@ impl WarpClient {
     /// Parse the status command output into WarpInfo struct
     fn parse_status_output(&self, output: &str) -> WarpResult<WarpInfo> {
         let mut info = WarpInfo::default();
-        
+
         for line in output.lines() {
             let line = line.trim();
-            
+
             if line.starts_with("Status update:") || line.contains("Status:") {
                 info.status = self.parse_status_line(line);
             } else if line.contains("Mode:") {
@@ -162,7 +160,7 @@ impl WarpClient {
     /// Parse status from a status line
     fn parse_status_line(&self, line: &str) -> WarpStatus {
         let line_lower = line.to_lowercase();
-        
+
         // First try the new "Status update:" format
         if line_lower.starts_with("status update:") {
             let status_part = line_lower.strip_prefix("status update:").unwrap().trim();
@@ -228,7 +226,7 @@ impl WarpClient {
 
         for line in output.lines() {
             let line = line.trim();
-            
+
             if line.contains("Device ID:") {
                 info.device_id = self.extract_value_after_colon(line);
             } else if line.contains("Organization:") {
@@ -326,7 +324,7 @@ mod tests {
     async fn test_client_creation() {
         let client = WarpClient::new();
         assert_eq!(client.command_timeout, Duration::from_secs(30));
-        
+
         let client_with_timeout = WarpClient::with_timeout(60);
         assert_eq!(client_with_timeout.command_timeout, Duration::from_secs(60));
     }
@@ -334,24 +332,24 @@ mod tests {
     #[test]
     fn test_status_parsing() {
         let client = WarpClient::new();
-        
+
         // Test connected status with new format
         let output = "Status update: Connected\nMode: Warp+DoH\nAccount type: Free";
         let info = client.parse_status_output(output).unwrap();
         assert_eq!(info.status, WarpStatus::Connected);
         assert_eq!(info.mode, Some(WarpMode::WarpDoH));
         assert_eq!(info.account_type, Some("Free".to_string()));
-        
+
         // Test disconnected status with new format
         let output = "Status update: Disconnected\nReason: Settings Changed";
         let info = client.parse_status_output(output).unwrap();
         assert_eq!(info.status, WarpStatus::Disconnected);
-        
+
         // Test connecting status
         let output = "Status update: Connecting\nReason: Checking for a route to the DNS endpoint";
         let info = client.parse_status_output(output).unwrap();
         assert_eq!(info.status, WarpStatus::Connecting);
-        
+
         // Test backwards compatibility with old format
         let output = "Status: Connected\nMode: Warp+DoH";
         let info = client.parse_status_output(output).unwrap();
@@ -361,7 +359,7 @@ mod tests {
     #[test]
     fn test_mode_parsing() {
         let client = WarpClient::new();
-        
+
         assert_eq!(client.parse_mode_line("Mode: Warp+DoH"), WarpMode::WarpDoH);
         assert_eq!(client.parse_mode_line("Mode: Warp+DoT"), WarpMode::WarpDoT);
         assert_eq!(client.parse_mode_line("Mode: DoH"), WarpMode::DoH);
@@ -372,23 +370,53 @@ mod tests {
     #[test]
     fn test_status_line_parsing() {
         let client = WarpClient::new();
-        
+
         // Test new format
-        assert_eq!(client.parse_status_line("Status update: Connected"), WarpStatus::Connected);
-        assert_eq!(client.parse_status_line("Status update: Disconnected"), WarpStatus::Disconnected);
-        assert_eq!(client.parse_status_line("Status update: Connecting"), WarpStatus::Connecting);
-        assert_eq!(client.parse_status_line("Status update: Disconnecting"), WarpStatus::Disconnecting);
-        
+        assert_eq!(
+            client.parse_status_line("Status update: Connected"),
+            WarpStatus::Connected
+        );
+        assert_eq!(
+            client.parse_status_line("Status update: Disconnected"),
+            WarpStatus::Disconnected
+        );
+        assert_eq!(
+            client.parse_status_line("Status update: Connecting"),
+            WarpStatus::Connecting
+        );
+        assert_eq!(
+            client.parse_status_line("Status update: Disconnecting"),
+            WarpStatus::Disconnecting
+        );
+
         // Test case insensitive
-        assert_eq!(client.parse_status_line("status update: connected"), WarpStatus::Connected);
-        assert_eq!(client.parse_status_line("STATUS UPDATE: DISCONNECTED"), WarpStatus::Disconnected);
-        
+        assert_eq!(
+            client.parse_status_line("status update: connected"),
+            WarpStatus::Connected
+        );
+        assert_eq!(
+            client.parse_status_line("STATUS UPDATE: DISCONNECTED"),
+            WarpStatus::Disconnected
+        );
+
         // Test backwards compatibility with old format
-        assert_eq!(client.parse_status_line("Status: Connected"), WarpStatus::Connected);
-        assert_eq!(client.parse_status_line("Status: Disconnected"), WarpStatus::Disconnected);
-        
+        assert_eq!(
+            client.parse_status_line("Status: Connected"),
+            WarpStatus::Connected
+        );
+        assert_eq!(
+            client.parse_status_line("Status: Disconnected"),
+            WarpStatus::Disconnected
+        );
+
         // Test unknown status
-        assert_eq!(client.parse_status_line("Status update: Unknown"), WarpStatus::Unknown);
-        assert_eq!(client.parse_status_line("Some other text"), WarpStatus::Unknown);
+        assert_eq!(
+            client.parse_status_line("Status update: Unknown"),
+            WarpStatus::Unknown
+        );
+        assert_eq!(
+            client.parse_status_line("Some other text"),
+            WarpStatus::Unknown
+        );
     }
 }

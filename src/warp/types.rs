@@ -23,10 +23,10 @@ impl std::fmt::Display for WarpStatus {
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum WarpMode {
-    DoH,      // DNS over HTTPS
-    DoT,      // DNS over TLS
-    WarpDoH,  // Warp + DNS over HTTPS
-    WarpDoT,  // Warp + DNS over TLS
+    DoH,     // DNS over HTTPS
+    DoT,     // DNS over TLS
+    WarpDoH, // Warp + DNS over HTTPS
+    WarpDoT, // Warp + DNS over TLS
     Unknown,
 }
 

@@ -1,6 +1,6 @@
 use std::sync::Arc;
 use std::time::Duration;
-use tokio::sync::{mpsc, Mutex};
+use tokio::sync::{Mutex, mpsc};
 use tokio::time::interval;
 
 use crate::warp::{WarpClient, WarpInfo, WarpResult};
@@ -28,7 +28,7 @@ impl WarpManager {
     pub fn new() -> Self {
         let client = WarpClient::new();
         let (sender, receiver) = mpsc::unbounded_channel();
-        
+
         Self {
             client,
             sender,
@@ -45,20 +45,21 @@ impl WarpManager {
     pub async fn start_background_tasks(&self) {
         let client = self.client.clone();
         let sender = self.sender.clone();
-        
+
         // Start periodic status updates
         tokio::spawn(async move {
             let mut interval = interval(Duration::from_secs(5));
-            
+
             loop {
                 interval.tick().await;
-                
+
                 match client.get_status().await {
                     Ok(info) => {
                         let _ = sender.send(WarpMessage::StatusUpdate(info));
                     }
                     Err(e) => {
-                        let _ = sender.send(WarpMessage::Error(format!("Status update failed: {}", e)));
+                        let _ =
+                            sender.send(WarpMessage::Error(format!("Status update failed: {}", e)));
                     }
                 }
             }
@@ -98,20 +99,22 @@ impl WarpManager {
                 // These are output messages, no action needed
             }
         }
-        
+
         Ok(())
     }
 
     #[allow(dead_code)] // Future use for async message-based architecture
     pub async fn process_messages(&self) {
         let receiver = self.receiver.clone();
-        
+
         while let Some(message) = {
             let mut recv = receiver.lock().await;
             recv.recv().await
         } {
             if let Err(e) = self.handle_message(message).await {
-                let _ = self.sender.send(WarpMessage::Error(format!("Command failed: {}", e)));
+                let _ = self
+                    .sender
+                    .send(WarpMessage::Error(format!("Command failed: {}", e)));
             }
         }
     }

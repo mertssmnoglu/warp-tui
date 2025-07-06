@@ -37,10 +37,10 @@ impl App {
     /// Run the application's main loop.
     pub fn run(mut self, mut terminal: DefaultTerminal) -> Result<()> {
         self.running = true;
-        
+
         // Initialize warp status
         self.update_warp_status();
-        
+
         while self.running {
             terminal.draw(|frame| self.render(frame))?;
             self.handle_crossterm_events()?;
@@ -66,23 +66,20 @@ impl App {
     /// - <https://docs.rs/ratatui/latest/ratatui/widgets/index.html>
     /// - <https://github.com/ratatui/ratatui/tree/main/ratatui-widgets/examples>
     fn render(&mut self, frame: &mut Frame) {
-        let title = Line::from("Cloudflare WARP TUI")
-            .bold()
-            .blue()
-            .centered();
-            
+        let title = Line::from("Cloudflare WARP TUI").bold().blue().centered();
+
         let status_color = match self.warp_info.status {
             WarpStatus::Connected => ratatui::style::Color::Green,
             WarpStatus::Disconnected => ratatui::style::Color::Red,
             WarpStatus::Connecting | WarpStatus::Disconnecting => ratatui::style::Color::Yellow,
             WarpStatus::Unknown => ratatui::style::Color::Gray,
         };
-        
+
         let mode_text = match &self.warp_info.mode {
             Some(mode) => format!("Mode: {}", mode),
             None => "Mode: N/A".to_string(),
         };
-        
+
         let text = format!(
             "Cloudflare WARP Terminal UI\n\n\
             Status: {}\n\
@@ -98,10 +95,18 @@ impl App {
             self.warp_info.status,
             mode_text,
             self.warp_info.account_type.as_deref().unwrap_or("N/A"),
-            if self.warp_info.warp_enabled { "Yes" } else { "No" },
-            if self.warp_info.gateway_enabled { "Yes" } else { "No" }
+            if self.warp_info.warp_enabled {
+                "Yes"
+            } else {
+                "No"
+            },
+            if self.warp_info.gateway_enabled {
+                "Yes"
+            } else {
+                "No"
+            }
         );
-        
+
         frame.render_widget(
             Paragraph::new(text)
                 .block(Block::bordered().title(title))
