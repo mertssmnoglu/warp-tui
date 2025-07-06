@@ -1,0 +1,12 @@
+[package]
+name = "warp-tui"
+version = "0.1.0"
+description = "Cloudflare Zero Trust WARP Terminal UI"
+authors = ["Mert Şişmanoğlu <mertssmnoglu@gmail.com>"]
+license = "MIT"
+edition = "2024"
+
+[dependencies]
+crossterm = "0.28.1"
+ratatui = "0.29.0"
+color-eyre = "0.6.3"
