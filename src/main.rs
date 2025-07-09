@@ -6,6 +6,7 @@ use ratatui::{
     text::Line,
     widgets::{Block, Paragraph},
 };
+use std::time::{Duration, Instant};
 
 use warp_tui::{WarpClient, WarpInfo, WarpStatus};
 
@@ -18,7 +19,7 @@ fn main() -> color_eyre::Result<()> {
 }
 
 /// The main application which holds the state and logic of the application.
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub struct App {
     /// Is the application running?
     running: bool,
@@ -26,6 +27,22 @@ pub struct App {
     warp_client: WarpClient,
     /// Current warp information
     warp_info: WarpInfo,
+    /// Current refresh interval in milliseconds
+    refresh_interval_ms: u64,
+    /// Last refresh time
+    last_refresh: Instant,
+}
+
+impl Default for App {
+    fn default() -> Self {
+        Self {
+            running: false,
+            warp_client: WarpClient::default(),
+            warp_info: WarpInfo::default(),
+            refresh_interval_ms: 1000,
+            last_refresh: Instant::now(),
+        }
+    }
 }
 
 impl App {
@@ -43,9 +60,26 @@ impl App {
 
         while self.running {
             terminal.draw(|frame| self.render(frame))?;
+
+            // Check if we need to auto-refresh
+            if self.should_auto_refresh() {
+                self.update_warp_status();
+            }
+
             self.handle_crossterm_events()?;
         }
         Ok(())
+    }
+
+    /// Check if it's time to auto-refresh
+    fn should_auto_refresh(&self) -> bool {
+        let refresh_interval = Duration::from_millis(self.refresh_interval_ms);
+        self.last_refresh.elapsed() >= refresh_interval
+    }
+
+    /// Get current refresh interval in milliseconds
+    fn current_refresh_interval(&self) -> u64 {
+        self.refresh_interval_ms
     }
 
     /// Update the warp status information
@@ -57,6 +91,8 @@ impl App {
                 self.warp_info = WarpInfo::default();
             }
         }
+        // Reset the refresh timer whenever we update status
+        self.last_refresh = Instant::now();
     }
 
     /// Renders the user interface.
@@ -86,7 +122,8 @@ impl App {
             {}\n\
             Account Type: {}\n\
             WARP Enabled: {}\n\
-            Gateway Enabled: {}\n\n\
+            Gateway Enabled: {}\n\
+            Auto-refresh: {}ms\n\n\
             Controls:\n\
             - Press 'c' to connect\n\
             - Press 'd' to disconnect\n\
@@ -104,7 +141,8 @@ impl App {
                 "Yes"
             } else {
                 "No"
-            }
+            },
+            self.current_refresh_interval()
         );
 
         frame.render_widget(
@@ -120,12 +158,15 @@ impl App {
     /// If your application needs to perform work in between handling events, you can use the
     /// [`event::poll`] function to check if there are any events available with a timeout.
     fn handle_crossterm_events(&mut self) -> Result<()> {
-        match event::read()? {
-            // it's important to check KeyEventKind::Press to avoid handling key release events
-            Event::Key(key) if key.kind == KeyEventKind::Press => self.on_key_event(key),
-            Event::Mouse(_) => {}
-            Event::Resize(_, _) => {}
-            _ => {}
+        // Poll for events with a small timeout to avoid blocking
+        if event::poll(Duration::from_millis(100))? {
+            match event::read()? {
+                // it's important to check KeyEventKind::Press to avoid handling key release events
+                Event::Key(key) if key.kind == KeyEventKind::Press => self.on_key_event(key),
+                Event::Mouse(_) => {}
+                Event::Resize(_, _) => {}
+                _ => {}
+            }
         }
         Ok(())
     }
