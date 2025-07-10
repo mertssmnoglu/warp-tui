@@ -149,9 +149,7 @@ impl App {
                 .as_ref()
                 .map(|m| m.to_string().to_lowercase());
             let selected_idx = match current_mode {
-                Some(mode) => AVAILABLE_MODES
-                    .iter()
-                    .position(|&m| m == mode.replace("+", "+")),
+                Some(mode) => AVAILABLE_MODES.iter().position(|&m| m == mode),
                 None => None,
             }
             .unwrap_or(0);

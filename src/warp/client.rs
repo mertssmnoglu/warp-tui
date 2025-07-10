@@ -221,7 +221,7 @@ impl WarpClient {
     }
 
     /// Parse the status command output into WarpInfo struct
-    fn parse_status_output(&self, output: &str) -> WarpResult<WarpInfo> {
+    pub fn parse_status_output(&self, output: &str) -> WarpResult<WarpInfo> {
         let mode = Some(self.get_operation_mode()?);
         let mut info = WarpInfo {
             mode,
@@ -246,7 +246,7 @@ impl WarpClient {
     }
 
     /// Parse status from a status line
-    fn parse_status_line(&self, line: &str) -> WarpStatus {
+    pub fn parse_status_line(&self, line: &str) -> WarpStatus {
         let line_lower = line.to_lowercase();
 
         // First try the new "Status update:" format
@@ -388,102 +388,4 @@ impl WarpClient {
     }
 
     // ...existing code...
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[tokio::test]
-    async fn test_client_creation() {
-        let client = WarpClient::new();
-        assert_eq!(client.command_timeout, Duration::from_secs(30));
-
-        let client_with_timeout = WarpClient::with_timeout(60);
-        assert_eq!(client_with_timeout.command_timeout, Duration::from_secs(60));
-    }
-
-    #[test]
-    fn test_status_parsing() {
-        let client = WarpClient::new();
-        // set mode to warp+dot for testing
-        client.set_mode_sync("warp+doh").unwrap();
-
-        // Test connected status with new format
-        let output = "Status update: Connected\nMode: Warp+DoH\nAccount type: Free";
-        let info = client.parse_status_output(output).unwrap();
-        assert_eq!(info.status, WarpStatus::Connected);
-        assert_eq!(info.mode, Some(WarpMode::WarpDoH));
-        assert_eq!(info.account_type, Some("Free".to_string()));
-
-        // Test disconnected status with new format
-        let output = "Status update: Disconnected\nReason: Settings Changed";
-        let info = client.parse_status_output(output).unwrap();
-        assert_eq!(info.status, WarpStatus::Disconnected);
-
-        // Test connecting status
-        let output = "Status update: Connecting\nReason: Checking for a route to the DNS endpoint";
-        let info = client.parse_status_output(output).unwrap();
-        assert_eq!(info.status, WarpStatus::Connecting);
-
-        // Test backwards compatibility with old format
-        let output = "Status: Connected\nMode: Warp+DoH";
-        let info = client.parse_status_output(output).unwrap();
-        assert_eq!(info.status, WarpStatus::Connected);
-    }
-
-    // Test for operation mode has been moved to integration tests since it requires the warp-cli command
-
-    #[test]
-    fn test_status_line_parsing() {
-        let client = WarpClient::new();
-
-        // Test new format
-        assert_eq!(
-            client.parse_status_line("Status update: Connected"),
-            WarpStatus::Connected
-        );
-        assert_eq!(
-            client.parse_status_line("Status update: Disconnected"),
-            WarpStatus::Disconnected
-        );
-        assert_eq!(
-            client.parse_status_line("Status update: Connecting"),
-            WarpStatus::Connecting
-        );
-        assert_eq!(
-            client.parse_status_line("Status update: Disconnecting"),
-            WarpStatus::Disconnecting
-        );
-
-        // Test case insensitive
-        assert_eq!(
-            client.parse_status_line("status update: connected"),
-            WarpStatus::Connected
-        );
-        assert_eq!(
-            client.parse_status_line("STATUS UPDATE: DISCONNECTED"),
-            WarpStatus::Disconnected
-        );
-
-        // Test backwards compatibility with old format
-        assert_eq!(
-            client.parse_status_line("Status: Connected"),
-            WarpStatus::Connected
-        );
-        assert_eq!(
-            client.parse_status_line("Status: Disconnected"),
-            WarpStatus::Disconnected
-        );
-
-        // Test unknown status
-        assert_eq!(
-            client.parse_status_line("Status update: Unknown"),
-            WarpStatus::Unknown
-        );
-        assert_eq!(
-            client.parse_status_line("Some other text"),
-            WarpStatus::Unknown
-        );
-    }
 }
