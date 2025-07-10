@@ -406,6 +406,8 @@ mod tests {
     #[test]
     fn test_status_parsing() {
         let client = WarpClient::new();
+        // set mode to warp+dot for testing
+        client.set_mode_sync("warp+doh").unwrap();
 
         // Test connected status with new format
         let output = "Status update: Connected\nMode: Warp+DoH\nAccount type: Free";
