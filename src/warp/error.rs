@@ -12,6 +12,9 @@ pub enum WarpError {
     #[allow(dead_code)] // May be used in future implementations
     ParseError(String),
 
+    #[error("Command timed out: {0}")]
+    Timeout(String),
+
     #[error("IO error: {0}")]
     IoError(#[from] std::io::Error),
 

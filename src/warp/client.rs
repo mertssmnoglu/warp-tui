@@ -1,3 +1,4 @@
+use serde::Deserialize;
 use std::process::Command;
 use std::time::Duration;
 use tokio::process::Command as AsyncCommand;
@@ -5,6 +6,16 @@ use tokio::time::timeout;
 
 use crate::warp::error::{WarpError, WarpResult};
 use crate::warp::types::{RegistrationInfo, WarpInfo, WarpMode, WarpStatus};
+
+#[derive(Debug, Deserialize)]
+struct WarpSettings {
+    settings: Settings,
+}
+
+#[derive(Debug, Deserialize)]
+struct Settings {
+    operation_mode: String,
+}
 
 #[derive(Clone, Debug)]
 pub struct WarpClient {
@@ -134,17 +145,94 @@ impl WarpClient {
         Ok(())
     }
 
+    /// Set mode synchronously
+    pub fn set_mode_sync(&self, mode: &str) -> WarpResult<()> {
+        let output = Command::new("warp-cli")
+            .args(["mode", mode])
+            .output()
+            .map_err(|e| {
+                if e.kind() == std::io::ErrorKind::NotFound {
+                    WarpError::CommandNotFound
+                } else {
+                    WarpError::IoError(e)
+                }
+            })?;
+
+        if !output.status.success() {
+            let error_msg = String::from_utf8_lossy(&output.stderr);
+            return Err(WarpError::CommandFailed(error_msg.to_string()));
+        }
+
+        Ok(())
+    }
+
+    /// Get the current operation mode from warp-cli settings
+    pub fn get_operation_mode(&self) -> WarpResult<WarpMode> {
+        let output = Command::new("warp-cli")
+            .args(["--json", "settings"])
+            .output()
+            .map_err(|e| WarpError::CommandFailed(e.to_string()))?;
+
+        if !output.status.success() {
+            return Err(WarpError::CommandFailed(
+                String::from_utf8_lossy(&output.stderr).to_string(),
+            ));
+        }
+
+        let settings: WarpSettings = serde_json::from_slice(&output.stdout)
+            .map_err(|e| WarpError::ParseError(e.to_string()))?;
+
+        Ok(match settings.settings.operation_mode.as_str() {
+            "warp+dot" => WarpMode::WarpDoT,
+            "dot" => WarpMode::DoT,
+            "doh" => WarpMode::DoH,
+            "warp+doh" => WarpMode::WarpDoH,
+            _ => WarpMode::Unknown,
+        })
+    }
+
+    /// Get the current operation mode asynchronously
+    pub async fn get_operation_mode_async(&self) -> WarpResult<WarpMode> {
+        let output = timeout(
+            self.command_timeout,
+            AsyncCommand::new("warp-cli")
+                .args(["--json", "settings"])
+                .output(),
+        )
+        .await
+        .map_err(|e| WarpError::Timeout(e.to_string()))??;
+
+        if !output.status.success() {
+            return Err(WarpError::CommandFailed(
+                String::from_utf8_lossy(&output.stderr).to_string(),
+            ));
+        }
+
+        let settings: WarpSettings = serde_json::from_slice(&output.stdout)
+            .map_err(|e| WarpError::ParseError(e.to_string()))?;
+
+        Ok(match settings.settings.operation_mode.as_str() {
+            "warp+dot" => WarpMode::WarpDoT,
+            "dot" => WarpMode::DoT,
+            "doh" => WarpMode::DoH,
+            "warp+doh" => WarpMode::WarpDoH,
+            _ => WarpMode::Unknown,
+        })
+    }
+
     /// Parse the status command output into WarpInfo struct
     fn parse_status_output(&self, output: &str) -> WarpResult<WarpInfo> {
-        let mut info = WarpInfo::default();
+        let mode = Some(self.get_operation_mode()?);
+        let mut info = WarpInfo {
+            mode,
+            ..Default::default()
+        };
 
         for line in output.lines() {
             let line = line.trim();
 
             if line.starts_with("Status update:") || line.contains("Status:") {
                 info.status = self.parse_status_line(line);
-            } else if line.contains("Mode:") {
-                info.mode = Some(self.parse_mode_line(line));
             } else if line.contains("Account type:") {
                 info.account_type = self.extract_value_after_colon(line);
             } else if line.contains("Warp enabled:") {
@@ -190,21 +278,7 @@ impl WarpClient {
         }
     }
 
-    /// Parse mode from a mode line
-    fn parse_mode_line(&self, line: &str) -> WarpMode {
-        let line_lower = line.to_lowercase();
-        if line_lower.contains("warp+doh") || line_lower.contains("warp+dns over https") {
-            WarpMode::WarpDoH
-        } else if line_lower.contains("warp+dot") || line_lower.contains("warp+dns over tls") {
-            WarpMode::WarpDoT
-        } else if line_lower.contains("doh") || line_lower.contains("dns over https") {
-            WarpMode::DoH
-        } else if line_lower.contains("dot") || line_lower.contains("dns over tls") {
-            WarpMode::DoT
-        } else {
-            WarpMode::Unknown
-        }
-    }
+    // Operation mode is now handled by get_operation_mode() which uses the JSON output
 
     /// Extract value after colon from a line
     fn extract_value_after_colon(&self, line: &str) -> Option<String> {
@@ -356,16 +430,7 @@ mod tests {
         assert_eq!(info.status, WarpStatus::Connected);
     }
 
-    #[test]
-    fn test_mode_parsing() {
-        let client = WarpClient::new();
-
-        assert_eq!(client.parse_mode_line("Mode: Warp+DoH"), WarpMode::WarpDoH);
-        assert_eq!(client.parse_mode_line("Mode: Warp+DoT"), WarpMode::WarpDoT);
-        assert_eq!(client.parse_mode_line("Mode: DoH"), WarpMode::DoH);
-        assert_eq!(client.parse_mode_line("Mode: DoT"), WarpMode::DoT);
-        assert_eq!(client.parse_mode_line("Mode: Unknown"), WarpMode::Unknown);
-    }
+    // Test for operation mode has been moved to integration tests since it requires the warp-cli command
 
     #[test]
     fn test_status_line_parsing() {
