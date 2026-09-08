@@ -1,10 +1,5 @@
-use std::process::Command;
+use warp_tui::resolve_warp_cli;
 
-/// Helper function to check if warp-cli is available
 pub fn is_warp_cli_available() -> bool {
-    Command::new("warp-cli")
-        .arg("--version")
-        .output()
-        .map(|output| output.status.success())
-        .unwrap_or(false)
+    resolve_warp_cli().is_some()
 }

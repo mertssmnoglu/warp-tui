@@ -1,6 +1,22 @@
 use warp_tui::warp::client::WarpClient;
 use warp_tui::warp::types::{WarpMode, WarpStatus};
 
+#[test]
+fn test_status_is_active() {
+    assert!(WarpStatus::Connected.is_active());
+    assert!(WarpStatus::Connecting.is_active());
+    assert!(!WarpStatus::Disconnected.is_active());
+    assert!(!WarpStatus::Disconnecting.is_active());
+    assert!(!WarpStatus::Unknown.is_active());
+}
+
+#[test]
+fn test_mode_from_label() {
+    assert_eq!(WarpMode::from_label("tunnel_only"), WarpMode::TunnelOnly);
+    assert_eq!(WarpMode::from_label("Warp+DoH"), WarpMode::WarpDoH);
+    assert_eq!(WarpMode::from_label("warp"), WarpMode::Warp);
+}
+
 #[tokio::test]
 async fn test_client_creation() {
     // Test that clients can be created with default and custom timeouts
@@ -15,8 +31,6 @@ async fn test_client_creation() {
 #[test]
 fn test_status_parsing() {
     let client = WarpClient::new();
-    // set mode to warp+dot for testing
-    client.set_mode_sync("warp+doh").unwrap();
 
     // Test connected status with new format
     let output = "Status update: Connected\nMode: Warp+DoH\nAccount type: Free";
@@ -29,6 +43,7 @@ fn test_status_parsing() {
     let output = "Status update: Disconnected\nReason: Settings Changed";
     let info = client.parse_status_output(output).unwrap();
     assert_eq!(info.status, WarpStatus::Disconnected);
+    assert_eq!(info.reason.as_deref(), Some("Settings Changed"));
 
     // Test connecting status
     let output = "Status update: Connecting\nReason: Checking for a route to the DNS endpoint";
