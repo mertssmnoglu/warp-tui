@@ -7,6 +7,7 @@ use crate::warp::{WarpClient, WarpInfo, WarpResult};
 
 #[derive(Debug, Clone)]
 #[allow(dead_code)] // Future use for async message-based architecture
+#[allow(clippy::large_enum_variant)]
 pub enum WarpMessage {
     Connect,
     Disconnect,
