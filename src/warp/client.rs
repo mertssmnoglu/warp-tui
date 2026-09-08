@@ -1,4 +1,5 @@
 use serde::Deserialize;
+use serde_json::Value;
 use std::path::PathBuf;
 use std::process::Command;
 use std::time::Duration;
@@ -13,7 +14,7 @@ use crate::warp::types::{NamedEntry, RegistrationInfo, WarpInfo, WarpMode, WarpS
 struct StatusJson {
     status: String,
     #[serde(default)]
-    reason: Option<String>,
+    reason: Option<Value>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -422,9 +423,22 @@ impl WarpClient {
     fn parse_status_json(&self, stdout: &str) -> WarpResult<WarpInfo> {
         let parsed: StatusJson =
             serde_json::from_str(stdout).map_err(|e| WarpError::ParseError(e.to_string()))?;
+
+        // Extract reason as a string if it's not null
+        let reason = parsed.reason.and_then(|v| {
+            match v {
+                Value::String(s) => Some(s),
+                Value::Object(obj) => {
+                    // If reason is an object, get the first key as the reason type
+                    obj.keys().next().cloned()
+                }
+                _ => None,
+            }
+        });
+
         let mut info = WarpInfo {
             status: WarpStatus::from_label(&parsed.status),
-            reason: parsed.reason.filter(|s| !s.is_empty()),
+            reason,
             ..Default::default()
         };
         if info.status == WarpStatus::Unknown {
