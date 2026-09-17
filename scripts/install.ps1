@@ -26,10 +26,16 @@ function Write-Log([string]$Message) {
 }
 
 function Get-Arch {
-    switch ([System.Runtime.InteropServices.RuntimeInformation]::ProcessArchitecture) {
-        "X64" { return "x86_64" }
-        "Arm64" { return "aarch64" }
-        default { throw "unsupported architecture: $([System.Runtime.InteropServices.RuntimeInformation]::ProcessArchitecture)" }
+    # Use environment variables instead of System.Runtime.InteropServices.RuntimeInformation:
+    # that type can fail to resolve on Windows PowerShell 5.1 depending on which
+    # assemblies are already loaded, throwing a confusing PropertyNotFoundStrict error.
+    $arch = $env:PROCESSOR_ARCHITEW6432
+    if (-not $arch) { $arch = $env:PROCESSOR_ARCHITECTURE }
+
+    switch -Wildcard ($arch) {
+        "AMD64" { return "x86_64" }
+        "ARM64" { return "aarch64" }
+        default { throw "unsupported architecture: $arch" }
     }
 }
 
