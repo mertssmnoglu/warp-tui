@@ -3,7 +3,7 @@ name = "warp-tui"
 version = "0.1.0"
 description = "Cloudflare Zero Trust WARP Terminal UI"
 authors = ["Mert Şişmanoğlu <mertssmnoglu@gmail.com>"]
-license = "MIT"
+license = "AGPL-3.0-only"
 edition = "2024"
 
 [[bin]]

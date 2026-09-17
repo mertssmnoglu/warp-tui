@@ -19,6 +19,22 @@ Built with Rust and [Ratatui], `warp-tui` provides a real-time, interactive term
 
 ## Installation
 
+### Install Script (Linux, macOS, Windows)
+
+Download and run the pre-built binary for your platform (x86_64 and arm64) directly from the latest [GitHub release](https://github.com/mertssmnoglu/warp-tui/releases/latest):
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/mertssmnoglu/warp-tui/main/scripts/install.sh | sh
+```
+
+This installs `warp-tui` into `$HOME/.local/bin` by default. Set `INSTALL_DIR` to change the install location, or `VERSION` to install a specific release (e.g. `VERSION=v1.2.3`):
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/mertssmnoglu/warp-tui/main/scripts/install.sh | INSTALL_DIR=/usr/local/bin sh
+```
+
+Each GitHub Release also attaches a standalone binary and a `.zip` archive (binary + README + LICENSE) for every OS/architecture, so you can download either format directly from the [releases page](https://github.com/mertssmnoglu/warp-tui/releases/latest).
+
 ### From Source
 
 ```bash
@@ -91,9 +107,9 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## License
 
-Copyright (c) Mert Şişmanoğlu <mertssmnoglu@gmail.com>
+Copyright (c) Mert Şişmanoğlu <me@mertsismanoglu.com>
 
-This project is licensed under the MIT license ([LICENSE] or <http://opensource.org/licenses/MIT>)
+This project is licensed under the GNU Affero General Public License v3.0 ([LICENSE] or <https://www.gnu.org/licenses/agpl-3.0.html>).
 
 [Ratatui]: https://ratatui.rs
 [LICENSE]: ./LICENSE
