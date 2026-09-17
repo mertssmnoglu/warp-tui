@@ -29,7 +29,7 @@ Download and run the pre-built binary for your platform (x86_64 and arm64) direc
 curl -fsSL https://raw.githubusercontent.com/mertssmnoglu/warp-tui/main/scripts/install.sh | sh
 ```
 
-This installs `warp-tui` into `$HOME/.local/bin` by default. Set `INSTALL_DIR` to change the install location, or `VERSION` to install a specific release (e.g. `VERSION=v1.2.3`):
+This installs `warp-tui` into `$HOME/.local/bin` by default. Set `INSTALL_DIR` to change the install location, or `VERSION` to install a specific release (e.g. `VERSION=v1.0.0`):
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/mertssmnoglu/warp-tui/main/scripts/install.sh | INSTALL_DIR=/usr/local/bin sh
@@ -47,7 +47,7 @@ Customize with environment variables before running:
 
 ```powershell
 $env:INSTALL_DIR = "C:\tools\warp-tui"
-$env:VERSION = "v1.2.3"
+$env:VERSION = "v1.0.0"
 irm https://raw.githubusercontent.com/mertssmnoglu/warp-tui/main/scripts/install.ps1 | iex
 ```
 
@@ -61,7 +61,7 @@ Customize with environment variables before running:
 
 ```bat
 set INSTALL_DIR=C:\tools\warp-tui
-set VERSION=v1.2.3
+set VERSION=v1.0.0
 curl -fsSL -o install.bat https://raw.githubusercontent.com/mertssmnoglu/warp-tui/main/scripts/install.bat && install.bat
 ```
 
