@@ -31,7 +31,7 @@ err() {
 detect_os() {
     os=$(uname -s)
     case "$os" in
-        Linux) echo "unknown-linux-gnu" ;;
+        Linux) echo "linux" ;;
         Darwin) echo "apple-darwin" ;;
         MINGW* | MSYS* | CYGWIN*) echo "pc-windows-msvc" ;;
         *) err "unsupported OS: $os" ;;
@@ -47,26 +47,41 @@ detect_arch() {
     esac
 }
 
+resolve_version() {
+    if command -v curl >/dev/null 2>&1; then
+        curl -fsSL "https://api.github.com/repos/${REPO}/releases/latest" |
+            grep '"tag_name":' | sed -E 's/.*"tag_name": *"([^"]+)".*/\1/'
+    elif command -v wget >/dev/null 2>&1; then
+        wget -qO- "https://api.github.com/repos/${REPO}/releases/latest" |
+            grep '"tag_name":' | sed -E 's/.*"tag_name": *"([^"]+)".*/\1/'
+    else
+        err "curl or wget is required to install ${BIN_NAME}"
+    fi
+}
+
 main() {
     os_part=$(detect_os)
     arch_part=$(detect_arch)
     target="${arch_part}-${os_part}"
 
+    tag="$VERSION"
+    if [ "$tag" = "latest" ]; then
+        tag=$(resolve_version)
+        [ -n "$tag" ] || err "failed to resolve the latest release tag"
+    fi
+    version_num="${tag#v}"
+
     case "$os_part" in
-        pc-windows-msvc) asset="${BIN_NAME}-${target}.exe" ;;
-        *) asset="${BIN_NAME}-${target}" ;;
+        pc-windows-msvc) asset="${BIN_NAME}-${version_num}-${target}.exe" ;;
+        *) asset="${BIN_NAME}-${version_num}-${target}" ;;
     esac
 
-    if [ "$VERSION" = "latest" ]; then
-        url="https://github.com/${REPO}/releases/latest/download/${asset}"
-    else
-        url="https://github.com/${REPO}/releases/download/${VERSION}/${asset}"
-    fi
+    url="https://github.com/${REPO}/releases/download/${tag}/${asset}"
 
     tmp_dir=$(mktemp -d)
     trap 'rm -rf "$tmp_dir"' EXIT
 
-    log "Downloading ${asset} (${VERSION})"
+    log "Downloading ${asset} (${tag})"
     if command -v curl >/dev/null 2>&1; then
         curl -fsSL "$url" -o "$tmp_dir/$asset" || err "failed to download $url"
     elif command -v wget >/dev/null 2>&1; then

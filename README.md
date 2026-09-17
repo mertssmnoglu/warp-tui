@@ -21,7 +21,9 @@ Built with Rust and [Ratatui], `warp-tui` provides a real-time, interactive term
 
 ### Install Script (Linux, macOS, Windows)
 
-Download and run the pre-built binary for your platform (x86_64 and arm64) directly from the latest [GitHub release](https://github.com/mertssmnoglu/warp-tui/releases/latest):
+Download and run the pre-built binary for your platform (x86_64 and arm64) directly from the latest [GitHub release](https://github.com/mertssmnoglu/warp-tui/releases/latest).
+
+**Linux / macOS** (bash/zsh/sh):
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/mertssmnoglu/warp-tui/main/scripts/install.sh | sh
@@ -32,6 +34,38 @@ This installs `warp-tui` into `$HOME/.local/bin` by default. Set `INSTALL_DIR` t
 ```bash
 curl -fsSL https://raw.githubusercontent.com/mertssmnoglu/warp-tui/main/scripts/install.sh | INSTALL_DIR=/usr/local/bin sh
 ```
+
+**Windows** — two options, pick whichever shell you use:
+
+*PowerShell:*
+
+```powershell
+irm https://raw.githubusercontent.com/mertssmnoglu/warp-tui/main/scripts/install.ps1 | iex
+```
+
+Customize with environment variables before running:
+
+```powershell
+$env:INSTALL_DIR = "C:\tools\warp-tui"
+$env:VERSION = "v1.2.3"
+irm https://raw.githubusercontent.com/mertssmnoglu/warp-tui/main/scripts/install.ps1 | iex
+```
+
+*cmd.exe* (requires `curl.exe`, bundled with Windows 10 1803+ and Windows 11):
+
+```bat
+curl -fsSL -o install.bat https://raw.githubusercontent.com/mertssmnoglu/warp-tui/main/scripts/install.bat && install.bat
+```
+
+Customize with environment variables before running:
+
+```bat
+set INSTALL_DIR=C:\tools\warp-tui
+set VERSION=v1.2.3
+curl -fsSL -o install.bat https://raw.githubusercontent.com/mertssmnoglu/warp-tui/main/scripts/install.bat && install.bat
+```
+
+Both install into `%LOCALAPPDATA%\warp-tui\bin` by default and add it to your user `PATH`.
 
 Each GitHub Release also attaches a standalone binary and a `.zip` archive (binary + README + LICENSE) for every OS/architecture, so you can download either format directly from the [releases page](https://github.com/mertssmnoglu/warp-tui/releases/latest).
 
